@@ -35,6 +35,35 @@ pipeline {
             }
         }
 
+        stage('Generate Runtime Environment') {
+            steps {
+                echo 'Writing runtime environment file for Next.js...'
+                sh '''
+                cat > .env.local <<EOF
+KEYCLOAK_BASE_URL=$KEYCLOAK_BASE_URL
+KEYCLOAK_REALM=$KEYCLOAK_REALM
+KEYCLOAK_CLIENT_ID=$KEYCLOAK_CLIENT_ID
+KEYCLOAK_CLIENT_SECRET=$KEYCLOAK_CLIENT_SECRET
+NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+EOF
+                '''
+            }
+        }
+
+        stage('Debug Environment') {
+            steps {
+                echo 'Checking injected Keycloak environment values...'
+                sh '''
+                echo "KEYCLOAK_BASE_URL=$KEYCLOAK_BASE_URL"
+                echo "KEYCLOAK_REALM=$KEYCLOAK_REALM"
+                echo "KEYCLOAK_CLIENT_ID=$KEYCLOAK_CLIENT_ID"
+                echo "KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET:+*****}"
+                echo "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL"
+                printenv | grep KEYCLOAK || true
+                '''
+            }
+        }
+
         stage('Install Dependencies') {
             steps {
                 echo 'Installing Project Dependencies...'
@@ -54,7 +83,7 @@ pipeline {
                 echo 'Generating Application Deployment Specs...'
                 sh '''
                 mkdir -p k8s
-                cat << 'EOF' > k8s/nextjs-app.yaml
+                cat <<EOF > k8s/nextjs-app.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -80,6 +109,17 @@ spec:
         ports:
         - containerPort: 3000
           name: http
+        env:
+        - name: KEYCLOAK_BASE_URL
+          value: "$KEYCLOAK_BASE_URL"
+        - name: KEYCLOAK_REALM
+          value: "$KEYCLOAK_REALM"
+        - name: KEYCLOAK_CLIENT_ID
+          value: "$KEYCLOAK_CLIENT_ID"
+        - name: KEYCLOAK_CLIENT_SECRET
+          value: "$KEYCLOAK_CLIENT_SECRET"
+        - name: NEXT_PUBLIC_APP_URL
+          value: "$NEXT_PUBLIC_APP_URL"
         volumeMounts:
         - name: app-source
           mountPath: /app
