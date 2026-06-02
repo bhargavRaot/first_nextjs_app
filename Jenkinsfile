@@ -1,6 +1,23 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'KEYCLOAK_BASE_URL', defaultValue: 'http://104.197.232.216:30080', description: 'Keycloak base URL')
+        string(name: 'KEYCLOAK_REALM', defaultValue: 'bhargav', description: 'Keycloak realm')
+        string(name: 'KEYCLOAK_CLIENT_ID', defaultValue: 'nextjs_app', description: 'Keycloak client ID')
+        password(name: 'KEYCLOAK_CLIENT_SECRET', defaultValue: '', description: 'Keycloak client secret')
+        string(name: 'NEXT_PUBLIC_APP_URL', defaultValue: 'http://localhost:3000', description: 'Public app URL')
+    }
+
+    environment {
+        KEYCLOAK_BASE_URL = "${params.KEYCLOAK_BASE_URL}"
+        KEYCLOAK_REALM = "${params.KEYCLOAK_REALM}"
+        KEYCLOAK_CLIENT_ID = "${params.KEYCLOAK_CLIENT_ID}"
+        KEYCLOAK_CLIENT_SECRET = "${params.KEYCLOAK_CLIENT_SECRET}"
+        NEXT_PUBLIC_APP_URL = "${params.NEXT_PUBLIC_APP_URL}"
+    }
+
+    // Automatically clears out old node_modules build files if a previous build failed
     options {
         timeout(time: 15, unit: 'MINUTES')
         disableConcurrentBuilds()
