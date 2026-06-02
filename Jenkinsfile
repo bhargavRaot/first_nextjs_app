@@ -7,6 +7,11 @@ pipeline {
         string(name: 'KEYCLOAK_CLIENT_ID', defaultValue: 'nextjs_app', description: 'Keycloak client ID')
         password(name: 'KEYCLOAK_CLIENT_SECRET', defaultValue: '', description: 'Keycloak client secret')
         string(name: 'NEXT_PUBLIC_APP_URL', defaultValue: 'http://localhost:3000', description: 'Public app URL')
+        string(name: 'DB_HOST', defaultValue: 'localhost', description: 'Database host')
+        string(name: 'DB_USER', defaultValue: 'root', description: 'Database user')
+        password(name: 'DB_PASS', defaultValue: '', description: 'Database password')
+        string(name: 'DB_NAME', defaultValue: 'nextjs_app', description: 'Database name')
+        string(name: 'DB_PORT', defaultValue: '3306', description: 'Database port')
     }
 
     environment {
@@ -15,6 +20,11 @@ pipeline {
         KEYCLOAK_CLIENT_ID = "${params.KEYCLOAK_CLIENT_ID}"
         KEYCLOAK_CLIENT_SECRET = "${params.KEYCLOAK_CLIENT_SECRET}"
         NEXT_PUBLIC_APP_URL = "${params.NEXT_PUBLIC_APP_URL}"
+        DB_HOST = "${params.DB_HOST}"
+        DB_USER = "${params.DB_USER}"
+        DB_PASS = "${params.DB_PASS}"
+        DB_NAME = "${params.DB_NAME}"
+        DB_PORT = "${params.DB_PORT}"
     }
 
     // Automatically clears out old node_modules build files if a previous build failed
@@ -40,6 +50,11 @@ pipeline {
                 echo 'Writing runtime environment file for Next.js...'
                 sh '''
                 cat > .env.local <<EOF
+DB_HOST=$DB_HOST
+DB_USER=$DB_USER
+DB_PASS=$DB_PASS
+DB_NAME=$DB_NAME
+DB_PORT=$DB_PORT
 KEYCLOAK_BASE_URL=$KEYCLOAK_BASE_URL
 KEYCLOAK_REALM=$KEYCLOAK_REALM
 KEYCLOAK_CLIENT_ID=$KEYCLOAK_CLIENT_ID
@@ -52,14 +67,20 @@ EOF
 
         stage('Debug Environment') {
             steps {
-                echo 'Checking injected Keycloak environment values...'
+                echo 'Checking injected Keycloak and Database environment values...'
                 sh '''
+                echo "=== Keycloak Variables ==="
                 echo "KEYCLOAK_BASE_URL=$KEYCLOAK_BASE_URL"
                 echo "KEYCLOAK_REALM=$KEYCLOAK_REALM"
                 echo "KEYCLOAK_CLIENT_ID=$KEYCLOAK_CLIENT_ID"
                 echo "KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET:+*****}"
                 echo "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL"
-                printenv | grep KEYCLOAK || true
+                echo "=== Database Variables ==="
+                echo "DB_HOST=$DB_HOST"
+                echo "DB_USER=$DB_USER"
+                echo "DB_PASS=${DB_PASS:+*****}"
+                echo "DB_NAME=$DB_NAME"
+                echo "DB_PORT=$DB_PORT"
                 '''
             }
         }
@@ -110,6 +131,16 @@ spec:
         - containerPort: 3000
           name: http
         env:
+        - name: DB_HOST
+          value: "$DB_HOST"
+        - name: DB_USER
+          value: "$DB_USER"
+        - name: DB_PASS
+          value: "$DB_PASS"
+        - name: DB_NAME
+          value: "$DB_NAME"
+        - name: DB_PORT
+          value: "$DB_PORT"
         - name: KEYCLOAK_BASE_URL
           value: "$KEYCLOAK_BASE_URL"
         - name: KEYCLOAK_REALM
